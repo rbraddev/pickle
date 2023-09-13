@@ -1,10 +1,11 @@
 import base64
 import pickle
 
-from fastapi import FastAPI, Request, Response, Body, HTTPException, status
+from fastapi import FastAPI, Request, Response, HTTPException, status
 from fastapi.responses import JSONResponse
+from starlette.datastructures import MutableHeaders
 
-from models import Session, Basket
+from models import Session, Basket, Item
 
 
 api = FastAPI()
@@ -24,12 +25,12 @@ ITEMS_DB = {
     }
 }
 
-EXCLUDED_MIDDLEWARE_ROUTES = ["/items", "/redoc", "/urls"]
+EXCLUDED_MIDDLEWARE_ROUTES = ["/items", "/docs", "/"]
 
 
 def add_items_to_basket(basket: Basket, item: str, qty: int):
     if not ITEMS_DB.get(item):
-        HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid item: {item}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid item: {item}")
     if basket.items.get(item):
         basket.items[item]["qty"] += qty
     else:
@@ -58,15 +59,12 @@ def load_session(pickled_session: str) -> Session:
 @api.middleware("http")
 async def check_session(request: Request, call_next) -> JSONResponse:
     if request.scope["path"] not in [route.path for route in api.routes]:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    elif all([
-        request.scope["path"] not in [route.path for route in api.routes],
-        request.scope["path"] not in EXCLUDED_MIDDLEWARE_ROUTES,
-        not request.headers.get("X-Session")
-    ]):
-        response = JSONResponse(content={"data": "Session Created"})
-        response.headers["X-Session"] = create_session()
-    else:
+        response = JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content="Item not found")
+    elif not request.headers.get("X-Session"):
+        headers_copy = MutableHeaders(request._headers)
+        headers_copy["X-Session"] = create_session()
+        request._headers = headers_copy
+        request.scope.update(headers=request.headers.raw)
         response = await call_next(request)
     return response
 
@@ -76,18 +74,12 @@ def get_items():
     return {"data": {"items": ITEMS_DB}}
 
 
-@api.get("/urls")
-def get_urls():
-    return  [{"path": route.path, "name": route.name} for route in api.routes]
-
-
-@api.post("/basket", status_code=201)
-def add_items(request: Request, response: Response, items: list[dict] = Body()):
+@api.put("/basket", status_code=status.HTTP_201_CREATED)
+def add_items(request: Request, response: Response, item: Item):
     session = load_session(request.headers["X-Session"])
-    for item in items:
-        add_items_to_basket(session.basket, item.get("id"), item.get("qty"))
+    add_items_to_basket(session.basket, item.id, item.qty)
     response.headers["X-Session"] = pickle_session(session)
-    return {"data": "items added to basket"}
+    return {"data": "item added to basket"}
 
 
 @api.get("/basket")

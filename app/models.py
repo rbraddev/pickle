@@ -1,3 +1,11 @@
+from pydantic import BaseModel
+
+
+class Item(BaseModel):
+    id: str
+    qty: int
+
+
 class Basket:
     def __init__(self):
         self.items: dict = {}
