@@ -99,4 +99,4 @@ def get_basket(request: Request, response: Response):
 
 @api.get("/")
 async def root():
-    return {"message": "Visit the docs at http://127.0.0.1:8000"}
+    return {"message": "Visit the docs at http://127.0.0.1:8000/docs"}
