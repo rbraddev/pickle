@@ -25,7 +25,7 @@ ITEMS_DB = {
     }
 }
 
-EXCLUDED_MIDDLEWARE_ROUTES = ["/items", "/docs", "/"]
+EXCLUDED_MIDDLEWARE_ROUTES = ["/items", "/docs", "/openapi.json", "/"]
 
 
 def add_items_to_basket(basket: Basket, item: str, qty: int):
@@ -77,7 +77,7 @@ def get_items():
 
 
 @api.put("/basket", status_code=status.HTTP_201_CREATED)
-def add_items(request: Request, response: Response, item: Item):
+def add_item(request: Request, response: Response, item: Item):
     session = load_session(request.headers["X-Session"])
     add_items_to_basket(session.basket, item.id, item.qty)
     response.headers["X-Session"] = pickle_session(session)
