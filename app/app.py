@@ -24,7 +24,7 @@ ITEMS_DB = {
     }
 }
 
-EXCLUDED_MIDDLEWARE_ROUTES = ["/items"]
+EXCLUDED_MIDDLEWARE_ROUTES = ["/items", "/redoc", "/urls"]
 
 
 def add_items_to_basket(basket: Basket, item: str, qty: int):
@@ -57,7 +57,13 @@ def load_session(pickled_session: str) -> Session:
 
 @api.middleware("http")
 async def check_session(request: Request, call_next) -> JSONResponse:
-    if request.scope["path"] not in EXCLUDED_MIDDLEWARE_ROUTES and not request.headers.get("X-Session"):
+    if request.scope["path"] not in [route.path for route in api.routes]:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    elif all([
+        request.scope["path"] not in [route.path for route in api.routes],
+        request.scope["path"] not in EXCLUDED_MIDDLEWARE_ROUTES,
+        not request.headers.get("X-Session")
+    ]):
         response = JSONResponse(content={"data": "Session Created"})
         response.headers["X-Session"] = create_session()
     else:
@@ -68,6 +74,11 @@ async def check_session(request: Request, call_next) -> JSONResponse:
 @api.get("/items")
 def get_items():
     return {"data": {"items": ITEMS_DB}}
+
+
+@api.get("/urls")
+def get_urls():
+    return  [{"path": route.path, "name": route.name} for route in api.routes]
 
 
 @api.post("/basket", status_code=201)
@@ -88,4 +99,4 @@ def get_basket(request: Request, response: Response):
 
 @api.get("/")
 async def root():
-    return {"message": "Pickle"}
+    return {"message": "Visit the docs at http://127.0.0.1:8000"}

@@ -4,6 +4,9 @@ import pickle
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials, OAuth2PasswordBearer
 
+from models import User
+
+
 api = FastAPI()
 auth = HTTPBasic()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
@@ -23,9 +26,11 @@ def get_token(credentials: HTTPBasicCredentials = Depends(auth)):
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
 
+
 @api.get("/token")
 def token(token: dict[str, User] = Depends(get_token)):
     return base64.b64encode(pickle.dumps(token, protocol=0))
+
 
 @api.get("/current_user")
 def get_user_details(token: str = Depends(oauth2_scheme)):
@@ -41,6 +46,7 @@ def get_user_details(token: str = Depends(oauth2_scheme)):
         }}
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
 
 @api.get("/")
 async def root():
