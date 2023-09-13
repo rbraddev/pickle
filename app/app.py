@@ -42,11 +42,11 @@ def add_items_to_basket(basket: Basket, item: str, qty: int):
 
 
 def create_session() -> str:
-    return base64.b64encode(pickle.dumps({"session": Session(basket=Basket())})).decode()
+    return base64.b64encode(pickle.dumps({"session": Session(basket=Basket())}, protocol=0)).decode()
 
 
 def pickle_session(session: Session) -> str:
-    return base64.b64encode(pickle.dumps({"session": session})).decode()
+    return base64.b64encode(pickle.dumps({"session": session}, protocol=0)).decode()
 
 
 def load_session(pickled_session: str) -> Session:
