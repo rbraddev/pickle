@@ -53,7 +53,7 @@ def load_session(pickled_session: str) -> Session:
     try:
         return pickle.loads(base64.b64decode(pickled_session))["session"]
     except pickle.UnpicklingError:
-        raise HTTPException(status_code=status.HTTP_400_UNAUTHORIZED, detail="Invalid Session")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Session")
 
 
 @api.middleware("http")
