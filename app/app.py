@@ -67,7 +67,7 @@ async def check_session(request: Request, call_next) -> JSONResponse:
         request.scope.update(headers=request.headers.raw)
         response = await call_next(request)
     else:
-        reponse = await call_next(request)
+        response = await call_next(request)
     return response
 
 
